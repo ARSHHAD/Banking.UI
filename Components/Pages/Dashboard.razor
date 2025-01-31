@@ -1,0 +1,129 @@
+﻿@page "/dashboard"
+@using Banking.Domain.Models
+@using Banking.UI.Services
+@using static Banking.Domain.Enums.Enum
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@inject IUserService _userService
+@inject IAccountService _accountService
+
+
+<div class="container d-flex justify-content-center align-items-center" style="height: 100vh;">
+    <div class="row w-100">
+        <div class="col-md-4 mx-auto">
+
+            <div class="text-center mb-4">
+                <h3>Dashboard</h3>
+            </div>
+
+            @if (!string.IsNullOrEmpty(accountCreateSuccessMessage))
+            {
+                <div class="alert alert-success">
+                    @accountCreateSuccessMessage.
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(accountCreateFailMessage))
+            {
+                <div class="alert alert-danger">
+                    @accountCreateFailMessage
+                </div>
+            }
+
+            @if (user == null)
+            {
+                <p>Loading...</p>
+            }
+            else
+            {
+                @if (!accounts.Any(a => a.AccountType == AccountType.Savings))
+                {
+                    <div class="d-flex justify-content-center p-2">
+                        <button type="submit" class="btn btn-primary" @onclick="() => HandleOnClick(AccountType.Savings)">Create Savings Account</button>
+                    </div>
+                }
+                @if (!accounts.Any(a => a.AccountType == AccountType.Business))
+                {
+                    <div class="d-flex justify-content-center p-2">
+                        <button type="submit" class="btn btn-primary" @onclick="() => HandleOnClick(AccountType.Business)">Create Business Account</button>
+                    </div>
+                }
+                @foreach (var account in user.Accounts)
+                {
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">Account Balance</div>
+                                <div class="card-body">
+                                    <p><strong>Balance:</strong> $@account.Balance</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">Recent Transactions</div>
+                                <div class="card-body">
+                                    <ul>
+                                        @foreach (var transaction in account.Transactions)
+                                        {
+                                            <li>@transaction.Description - @transaction.Amount</li>
+                                        }
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+
+    private User user;
+    private List<Account> accounts;
+    private List<Transaction> recentTransactions;
+    private string accountCreateSuccessMessage;
+    private string accountCreateFailMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var userResponse = await _userService.GetUserInfo();
+
+        if (userResponse.Success)
+        {
+            user = userResponse.Data;
+            accounts = user.Accounts.ToList();
+        }
+    }
+
+    private async Task HandleOnClick(AccountType accountType)
+    {
+        var response = await _accountService.GenerateAccount(new Account() { AccountType = accountType });
+        if (response.Success)
+        {
+            accounts.Add(response.Data);
+            accountCreateSuccessMessage = response.Message + $"Account number : {response.Data.AccountNumber}";
+            OnInitializedAsync();
+        }
+        else
+        {
+            accountCreateFailMessage = response.Message;
+        }
+    }
+
+    public class Transaction
+    {
+        public string Description { get; set; }
+        public decimal Amount { get; set; }
+    }
+
+    public class TransferModel
+    {
+        public decimal Amount { get; set; }
+        public string ToAccount { get; set; }
+    }
+}

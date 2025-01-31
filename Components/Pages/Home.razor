@@ -1,0 +1,27 @@
+﻿@page "/"
+
+<PageTitle>Home</PageTitle>
+
+<div class="d-flex justify-content-center">
+    <h2>Welcome to City Bank</h2>
+</div>
+
+<div>New User? <a href="#" @onclick="GoToRegisterPage">Register</a></div>
+<div>Already have an account?<a href="#" @onclick="GoToLoginPage">Login</a></div>
+
+
+@code {
+
+    [Inject] private NavigationManager NavigationManager { get; set; }
+
+    private void GoToLoginPage()
+    {
+        NavigationManager.NavigateTo("/login");
+    }
+
+    private void GoToRegisterPage()
+    {
+        NavigationManager.NavigateTo("/register");
+    }
+
+}
